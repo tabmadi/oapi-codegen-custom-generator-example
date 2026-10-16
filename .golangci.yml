@@ -30,6 +30,7 @@ linters:
     - forcetypeassert # errcheck is better
     - gomodguard # only useful for large codebases
     - depguard # only useful for large codebases
+    - exhaustruct # exhaustruct_v5 replaces it
     - lll # golines is better
     - nlreturn # wsl_v5 is better
     - wsl # wsl_v5 is better

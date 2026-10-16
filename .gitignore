@@ -12,13 +12,13 @@
 *.swo
 
 # Environment variable files
-.env
 .env*
 !.env.example
 
 # Moonrepo
-.moon/cache
-.moon/docker
 
 # Build files
 bin/
+
+# Planned work stays local
+*.local.md

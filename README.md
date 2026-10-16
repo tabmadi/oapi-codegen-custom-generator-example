@@ -1,53 +1,19 @@
-# 🚀 Custom oapi-codegen Generator Template
+# oapi-codegen Custom Generator Example
 
-[![Go Version](https://img.shields.io/badge/Go-1.24.5-blue.svg)](https://golang.org/doc/devel/release.html)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+A small Go program that reads an OpenAPI spec with the [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) loader and writes Go code from a `text/template` of your own. It shows how to generate code that the built-in oapi-codegen outputs do not cover.
 
-> **Note**: This is a GitHub template repository that demonstrates how to create custom code generators using [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) with Go templates.
+## What it shows
 
-## 📋 About This Template
+oapi-codegen generates models, servers, and clients. A project often needs more from the same spec: route tables, permission maps, mocks, or docs. This example uses the oapi-codegen loader and writes its own output in four steps:
 
-This project shows how to build custom code generators that process OpenAPI specifications using oapi-codegen as a foundation and Go templates to define the generated code output. Instead of generating standard client/server boilerplate, you can create completely custom code tailored to your specific needs.
+1. **Load**: `util.LoadSwagger` parses `api/openapi.yml` into the kin-openapi model.
+2. **Extract**: the generator walks the paths in sorted order and collects each `GET`, `POST`, `PUT`, and `DELETE` operation.
+3. **Render**: `templates/functions.go.tmpl` turns each operation into a Go function.
+4. **Print**: the result goes to standard output.
 
-## 🎯 What This Template Demonstrates
-
-- **Custom Code Generation**: Generate any type of code from OpenAPI specs using Go templates
-- **Template-Based Approach**: Use Go's `text/template` package to define exactly what code to generate
-- **Flexible Configuration**: Easy configuration through environment variables
-- **Real Example**: Working example that generates Go functions from a User Management API
-
-## 🏗️ Project Structure
-
-```
-├── cmd/generate/main.go          # Entry point for the code generator
-├── internal/
-│   ├── config/config.go          # Configuration management
-│   └── generator/generator.go    # Core generation logic
-├── templates/
-│   └── functions.go.tmpl         # Go template defining the output format
-├── api/
-│   └── openapi.yml              # Sample OpenAPI specification
-└── README.md                    # This file
-```
-
-## 🔧 How It Works
-
-1. **Load OpenAPI Spec**: Uses `oapi-codegen/pkg/util.LoadSwagger()` to parse the OpenAPI specification
-2. **Extract Data**: Processes the spec to extract operations (GET, POST, PUT, DELETE) and their details
-3. **Apply Templates**: Uses Go templates to generate custom code based on the extracted data
-4. **Output Generation**: Produces the final code according to your template definitions
-
-### Example Output
-
-Given the sample OpenAPI spec, the generator creates Go functions like:
+For the sample spec, the output starts like this:
 
 ```go
-// Generated functions from OpenAPI specification
-
-package main
-
-import "log"
-
 // listUsers handles GET /users
 func listUsers() {
 	log.Println("read only")
@@ -57,158 +23,62 @@ func listUsers() {
 func createUser() {
 	log.Println("write only")
 }
-
-// getUserByID handles GET /users/{id}
-func getUserByID() {
-	log.Println("read only")
-}
-
-// updateUser handles PUT /users/{id}
-func updateUser() {
-	log.Println("write only")
-}
-
-// deleteUser handles DELETE /users/{id}
-func deleteUser() {
-	log.Println("write only")
-}
 ```
 
-## 🚀 Getting Started
+## Run it
 
-### Prerequisites
+1. Install [mise](https://mise.jdx.dev/getting-started.html).
+2. Install the tools, then run the generator:
 
-- Go 1.24.5 or later
-- (Optional) [Moonrepo](https://moonrepo.dev/) for enhanced build tooling
-
-### Setup
-
-1. **Use this template** by clicking "Use this template" button on GitHub
-2. **Clone your new repository**:
    ```bash
-   git clone <your-repo-url>
-   cd <your-repo-name>
+   git clone git@github.com:tabmadi/oapi-codegen-custom-generator-example.git
+   cd oapi-codegen-custom-generator-example
+   mise install
+   mise run setup
+   mise run generate
    ```
 
-3. **Install dependencies**:
+3. To read another spec, set `FILE_PATH`:
+
    ```bash
-   # Using Moonrepo (recommended)
-   proto use
-   moon :setup
-
-   # Using Make
-   make install
-
-   # Using Go directly
-   go mod download
+   FILE_PATH=path/to/openapi.yml mise run generate > generated.go
    ```
 
-### Running the Generator
+| Variable | Description | Default |
+| --- | --- | --- |
+| `FILE_PATH` | The OpenAPI spec that the generator reads | `./api/openapi.yml` |
 
-```bash
-# Using Moonrepo
-moon :run
+## How it works
 
-# Using Make
-make run
+| File | Holds |
+| --- | --- |
+| [`cmd/generate/main.go`](cmd/generate/main.go) | Loads the config and runs the generator |
+| [`internal/generator/generator.go`](internal/generator/generator.go) | Loads the spec, collects the operations, and renders the template |
+| [`templates/functions.go.tmpl`](templates/functions.go.tmpl) | The output shape. Change it to change what the generator writes |
+| [`api/openapi.yml`](api/openapi.yml) | The sample spec: a users CRUD API |
+| [`internal/config/config.go`](internal/config/config.go) | Reads `FILE_PATH` from the environment and `.env` |
 
-# Using Go directly
-go run ./cmd/generate
+To generate something else, change the template first. To give the template more data, add a field to `OperationData` and fill it in the loop. The kin-openapi model also holds the parameters, the request bodies, the responses, and any `x-` extension.
 
-# With custom OpenAPI spec
-FILE_PATH=./path/to/your/openapi.yml go run ./cmd/generate
-```
+## What is deliberately missing
 
-## 🛠️ Customization
+- **Every HTTP method**: the loop reads `GET`, `POST`, `PUT`, and `DELETE`. `PATCH`, `HEAD`, and `OPTIONS` follow the same pattern.
+- **Formatted output**: the result is not passed through `go/format`.
+- **A file output**: the generator prints to standard output. Redirect it to a file, or call it from a `//go:generate` line.
+- **Tests**: a golden-file test that compares the output with a committed file is the usual pattern.
 
-### 1. Modify the Template
+## Tasks
 
-Edit `templates/functions.go.tmpl` to change the generated code format. The template receives an array of `OperationData` structs:
+| Task | Does |
+| --- | --- |
+| `mise run setup` | Downloads the modules and installs the git hooks |
+| `mise run generate` | Runs the generator and prints the code |
+| `mise run build` | Builds a static binary at `bin/generate` |
+| `mise run lint` | Runs `lint:go`, `lint:md`, and `lint:secrets` |
+| `mise run format` | Applies every formatter |
+| `mise run check` | Runs `lint` and `test`. Run it before you finish a change |
+| `mise run ci` | Runs exactly what CI runs. The `pre-push` hook runs it too |
 
-```go
-type OperationData struct {
-    OperationID string  // e.g., "listUsers"
-    Method      string  // e.g., "GET"
-    Path        string  // e.g., "/users"
-    LogMessage  string  // e.g., "read only"
-}
-```
+## License
 
-### 2. Extend the Generator
-
-Modify `internal/generator/generator.go` to:
-- Extract additional data from the OpenAPI spec
-- Process different parts of the specification (schemas, parameters, etc.)
-- Add custom logic for your specific use case
-
-### 3. Add More Templates
-
-Create additional template files and modify the generator to use them:
-
-```go
-// Example: Add multiple templates
-clientTmpl, _ := template.ParseFiles("templates/client.go.tmpl")
-serverTmpl, _ := template.ParseFiles("templates/server.go.tmpl")
-```
-
-### 4. Configuration Options
-
-Add more configuration options in `internal/config/config.go`:
-
-```go
-type Config struct {
-    FilePath     string `default:"./api/openapi.yml" envconfig:"FILE_PATH"`
-    OutputDir    string `default:"./generated" envconfig:"OUTPUT_DIR"`
-    PackageName  string `default:"generated" envconfig:"PACKAGE_NAME"`
-}
-```
-
-## 📝 Example Use Cases
-
-- **API Client Generators**: Generate custom HTTP clients
-- **Mock Generators**: Create mock implementations for testing
-- **Documentation**: Generate custom API documentation
-- **Validation Code**: Create request/response validators
-- **Database Models**: Generate database models from schemas
-- **Configuration Files**: Generate config files for other tools
-
-## 🔨 Available Commands
-
-### Moonrepo Commands
-
-- `moon :setup` - Set up project dependencies
-- `moon :run` - Run the code generator
-- `moon :build` - Build the project
-- `moon :test` - Run tests
-- `moon :lint` - Lint the code
-- `moon :format` - Format the code
-- `moon :clean` - Clean build artifacts
-
-### Make Commands
-
-- `make install` - Install tools and dependencies
-- `make run` - Run the code generator
-- `make build` - Build the project
-- `make test` - Run tests
-- `make lint` - Lint the code
-- `make format` - Format the code
-- `make clean` - Clean build artifacts
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📚 Resources
-
-- [oapi-codegen Documentation](https://github.com/oapi-codegen/oapi-codegen)
-- [Go Templates Documentation](https://pkg.go.dev/text/template)
-- [OpenAPI Specification](https://swagger.io/specification/)
-- [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+Apache License 2.0. See [LICENSE](LICENSE).

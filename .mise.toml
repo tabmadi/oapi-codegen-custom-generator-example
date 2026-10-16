@@ -1,0 +1,58 @@
+# Every tool that the repo needs is pinned here. `mise install` installs them.
+
+[tools]
+go = "1.27.2"
+golangci-lint = "2.14.0"
+lefthook = "2.2.2"
+cocogitto = "7.0.0"
+gitleaks = "8.30.1"
+rumdl = "0.2.79"
+
+[tasks.setup]
+description = "Download the modules and install the git hooks"
+run = ["go mod download", "lefthook install"]
+
+[tasks.generate]
+description = "Run the generator on FILE_PATH and print the generated code"
+run = "go run ./cmd/generate"
+
+[tasks.build]
+description = "Build a static, stripped binary at bin/generate"
+env = { CGO_ENABLED = "0" }
+run = 'go build -ldflags="-s -w" -trimpath -o bin/generate ./cmd/generate'
+
+[tasks.clean]
+description = "Delete the build output"
+run = "rm -rf bin"
+
+[tasks.test]
+description = "Run the tests"
+run = "go test ./..."
+
+[tasks."lint:go"]
+description = "golangci-lint with every linter that .golangci.yml enables"
+run = "golangci-lint run --allow-parallel-runners"
+
+[tasks."lint:md"]
+description = "Markdown structure and formatting"
+run = "rumdl check ."
+
+[tasks."lint:secrets"]
+description = "Scan the working tree for committed secrets"
+run = "gitleaks dir . --no-banner"
+
+[tasks.lint]
+description = "Every linter"
+depends = ["lint:go", "lint:md", "lint:secrets"]
+
+[tasks.format]
+description = "Apply every formatter and every safe lint fix"
+run = ["golangci-lint run --fix --allow-parallel-runners", "rumdl check --fix ."]
+
+[tasks.check]
+description = "The gate: run it before you finish a change"
+run = ["mise run lint", "mise run test"]
+
+[tasks.ci]
+description = "Run exactly what CI runs. The pre-push hook and the CI workflow call it"
+run = ["mise run check", "mise run build", "mise run generate"]

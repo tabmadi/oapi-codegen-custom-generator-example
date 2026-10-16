@@ -1,6 +1,6 @@
-module github.com/tab-sama/oapi-codegen-custom-generator-template
+module github.com/tabmadi/oapi-codegen-custom-generator-example
 
-go 1.24.5
+go 1.27.2
 
 require (
 	github.com/joho/godotenv v1.5.1

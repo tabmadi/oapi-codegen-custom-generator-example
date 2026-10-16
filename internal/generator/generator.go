@@ -3,12 +3,19 @@ package generator
 
 import (
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"text/template"
 
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 
-	"github.com/tab-sama/oapi-codegen-custom-generator-template/internal/config"
+	"github.com/tabmadi/oapi-codegen-custom-generator-example/internal/config"
+)
+
+const (
+	readOnly  = "read only"
+	writeOnly = "write only"
 )
 
 // Generator handles the code generation process based on OpenAPI specification files.
@@ -45,13 +52,18 @@ func (g *Generator) Generate() {
 
 	var operations []OperationData
 
-	for path, pathItem := range swagger.Paths.Map() {
+	paths := swagger.Paths.Map()
+
+	// Map order is random, so the paths are sorted to keep the output stable between runs.
+	for _, path := range slices.Sorted(maps.Keys(paths)) {
+		pathItem := paths[path]
+
 		if pathItem.Get != nil {
 			operations = append(operations, OperationData{
 				OperationID: pathItem.Get.OperationID,
 				Method:      "GET",
 				Path:        path,
-				LogMessage:  "read only",
+				LogMessage:  readOnly,
 			})
 		}
 
@@ -60,7 +72,7 @@ func (g *Generator) Generate() {
 				OperationID: pathItem.Post.OperationID,
 				Method:      "POST",
 				Path:        path,
-				LogMessage:  "write only",
+				LogMessage:  writeOnly,
 			})
 		}
 
@@ -69,7 +81,7 @@ func (g *Generator) Generate() {
 				OperationID: pathItem.Put.OperationID,
 				Method:      "PUT",
 				Path:        path,
-				LogMessage:  "write only",
+				LogMessage:  writeOnly,
 			})
 		}
 
@@ -78,7 +90,7 @@ func (g *Generator) Generate() {
 				OperationID: pathItem.Delete.OperationID,
 				Method:      "DELETE",
 				Path:        path,
-				LogMessage:  "write only",
+				LogMessage:  writeOnly,
 			})
 		}
 	}

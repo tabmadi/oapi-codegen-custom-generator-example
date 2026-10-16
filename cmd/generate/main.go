@@ -2,8 +2,8 @@
 package main
 
 import (
-	"github.com/tab-sama/oapi-codegen-custom-generator-template/internal/config"
-	"github.com/tab-sama/oapi-codegen-custom-generator-template/internal/generator"
+	"github.com/tabmadi/oapi-codegen-custom-generator-example/internal/config"
+	"github.com/tabmadi/oapi-codegen-custom-generator-example/internal/generator"
 )
 
 func main() {
